@@ -2231,9 +2231,17 @@ def get_job_data():
 @app.route('/admin/delete_job/<int:job_id>', methods=['DELETE'])
 def delete_job(job_id):
     conn = get_db()
-    conn.execute("UPDATE job SET active = 0 WHERE id = ?", (job_id,))
-    conn.commit()
-    return jsonify({'message': 'Job marked as inactive'})
+    try:
+        cur = conn.execute("SELECT * FROM job WHERE id = ?", (job_id,))
+        job = cur.fetchone()
+        if not job:
+            return jsonify({'error': 'Job not found'}), 404
+        conn.execute("UPDATE job SET active = 0 WHERE id = ?", (job_id,))
+        conn.commit()
+        return jsonify({'message': 'Job marked as inactive'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 
 @app.route('/admin/users')
 def get_users():
