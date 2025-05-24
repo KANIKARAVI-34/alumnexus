@@ -247,7 +247,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 `;
                 applicationList.appendChild(row);
             });
-        })
         .catch(error => console.error("Error loading job data:", error));
     });
 
