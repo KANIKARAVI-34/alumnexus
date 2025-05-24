@@ -249,7 +249,7 @@ document.addEventListener("DOMContentLoaded", function () {
             });
         })
         .catch(error => console.error("Error loading job data:", error));
-});
+    });
 
 // ✅ Event Management
 const createEventBtn = document.getElementById("createEventBtn");
