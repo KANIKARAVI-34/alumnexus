@@ -188,34 +188,34 @@ document.addEventListener("DOMContentLoaded", function () {
             eventDescInput.value = "";
         });
         // Delete Event
-document.addEventListener('click', async function(e) {
-    if (e.target.classList.contains('delete-event')) {
-        const eventId = e.target.dataset.eventId;
-        if (confirm('Are you sure you want to cancel this event?')) {
-            try {
-                const response = await fetch(`/api/events/${eventId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    credentials: 'include'  // Important for session cookies
-                });
-                
-                const result = await response.json();
-                
-                if (response.ok) {
-                    alert(result.message || 'Event cancelled successfully!');
-                    loadEvents(); // Refresh the events list
-                } else {
-                    alert(result.error || 'Failed to cancel event');
+    document.addEventListener('click', async function(e) {
+        if (e.target.classList.contains('delete-event')) {
+            const eventId = e.target.dataset.eventId;
+            if (confirm('Are you sure you want to cancel this event?')) {
+                try {
+                    const response = await fetch(`/api/events/${eventId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        credentials: 'include'  // Important for session cookies
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (response.ok) {
+                        alert(result.message || 'Event cancelled successfully!');
+                        loadEvents(); // Refresh the events list
+                    } else {
+                        alert(result.error || 'Failed to cancel event');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Error cancelling event - check console');
                 }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Error cancelling event - check console');
             }
         }
-    }
-});
+    });
     
     // Load job data from backend
     fetch("/admin/job_data")
