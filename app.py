@@ -633,13 +633,13 @@ def get_notifications():
             LIMIT 10
         """, (user['id'],)).fetchall()
         
-        return jsonify([dict(n) for n in notifications])
-
-
-@app.route('/profile', methods=['GET', 'POST'])
+        return jsonify([dict(n) for n in notifications])@app.route('/profile', methods=['GET', 'POST'])
 def profile():
     if 'user' not in session:
         return redirect(url_for('login'))
+
+    user_id = session['user']['id']
+    session_email = session['user']['email']
 
     if request.method == 'POST':
         try:
@@ -648,10 +648,9 @@ def profile():
             last_name = request.form.get("last_name", "").strip()
             department = request.form.get("department", "").strip()
             new_email = request.form.get("email", "").strip().lower()
+            privacy = request.form.get("privacy", "public")  # get privacy field from form
             resume = request.files.get("resume")
             avatar = request.files.get("avatar")
-            user_id = session['user']['id']
-            session_email = session['user']['email']
 
             with get_db() as conn:
                 # Get current user data
@@ -669,25 +668,13 @@ def profile():
                     if existing:
                         return jsonify(success=False, message="This email is already registered with another account.")
                 
-                # Validate profile picture: Check if avatar is provided or already exists in the current user
+                # Validate avatar
                 if not avatar and not current_user['avatar']:
                     return jsonify(success=False, message="Please upload a profile picture.")
 
-                # If avatar is uploaded, use it, otherwise retain the current user's avatar
+                # Read file data if uploaded; else keep current data
                 resume_data = resume.read() if resume else current_user.get('resume')
-                avatar_data = avatar.read() if avatar else current_user['avatar']
-
-                     connections = conn.execute("""
-                     SELECT u.id, u.fullname, u.graduation_year
-                     FROM connection c
-                     JOIN user u ON (c.sender_id = u.id OR c.receiver_id = u.id) AND u.id != ?
-                     
-                     WHERE (c.sender_id = ? OR c.receiver_id = ?) 
-                         AND c.status = 'accepted'
-                         AND u.privacy != 'private'
-                 """, (user['id'], user['id'], user['id'])).fetchall()
-      
-                 return render_template('profile.html', user=user, skills=skills, resume_url=resume_url,role=role,connections=connections)
+                avatar_data = avatar.read() if avatar else current_user.get('avatar')
 
                 # Update user data
                 conn.execute('''
@@ -706,14 +693,12 @@ def profile():
                     department,
                     new_email,
                     resume_data,
-                    avatar_data if avatar_data else current_user.get('avatar'),  # Keep existing if no new upload
+                    avatar_data,
                     privacy,
                     user_id
                 ))
 
-                conn.commit()
-
-                # Save updated skills
+                # Update skills
                 skills_data = request.form.get("skills", "[]")
                 skills = json.loads(skills_data)
 
@@ -738,6 +723,27 @@ def profile():
             return jsonify(success=False, message="A user with this email already exists.")
         except Exception as e:
             return jsonify(success=False, message=f"An error occurred: {str(e)}")
+
+    # For GET request: show profile page with connections excluding private users
+    with get_db() as conn:
+        # Reload user info from DB
+        user = conn.execute("SELECT * FROM user WHERE id = ?", (user_id,)).fetchone()
+        skills = conn.execute("SELECT * FROM skill WHERE user_id = ?", (user_id,)).fetchall()
+        resume_url = url_for('static', filename='resumes/{}.pdf'.format(user_id))  # example
+        role = "Member"  # example placeholder, replace as needed
+
+        # Connections: exclude users with privacy='private'
+        connections = conn.execute("""
+            SELECT u.id, u.first_name || ' ' || u.last_name AS fullname, u.graduation_year
+            FROM connection c
+            JOIN user u ON (c.sender_id = u.id OR c.receiver_id = u.id) AND u.id != ?
+            WHERE (c.sender_id = ? OR c.receiver_id = ?)
+                AND c.status = 'accepted'
+                AND u.privacy != 'private'
+        """, (user_id, user_id, user_id)).fetchall()
+
+    return render_template('profile.html', user=user, skills=skills, resume_url=resume_url, role=role, connections=connections)
+
 
 @app.route('/create_mentor_session', methods=['POST'])
 def create_mentor_session():
