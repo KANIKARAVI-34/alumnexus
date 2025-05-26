@@ -677,7 +677,17 @@ def profile():
                 resume_data = resume.read() if resume else current_user.get('resume')
                 avatar_data = avatar.read() if avatar else current_user['avatar']
 
-                privacy = request.form.get("privacy", "public").strip()
+                     connections = conn.execute("""
+                     SELECT u.id, u.fullname, u.graduation_year
+                     FROM connection c
+                     JOIN user u ON (c.sender_id = u.id OR c.receiver_id = u.id) AND u.id != ?
+                     
+                     WHERE (c.sender_id = ? OR c.receiver_id = ?) 
+                         AND c.status = 'accepted'
+                         AND u.privacy != 'private'
+                 """, (user['id'], user['id'], user['id'])).fetchall()
+      
+                 return render_template('profile.html', user=user, skills=skills, resume_url=resume_url,role=role,connections=connections)
 
                 # Update user data
                 conn.execute('''
