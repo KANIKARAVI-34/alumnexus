@@ -2738,7 +2738,7 @@ def get_connections():
         
         user_id = current_user['id']
 
-        # Get accepted connections
+        # Get accepted connections - only show public profiles
         query = """
         SELECT 
             u.id,
@@ -2754,6 +2754,7 @@ def get_connections():
         )
         LEFT JOIN profile p ON u.id = p.user_id
         WHERE c.status = 'accepted'
+        AND (u.privacy = 'public' OR u.privacy IS NULL)  -- Only show public profiles
         """
         results = conn.execute(query, (user_id, user_id)).fetchall()
         
