@@ -633,7 +633,9 @@ def get_notifications():
             LIMIT 10
         """, (user['id'],)).fetchall()
         
-        return jsonify([dict(n) for n in notifications])@app.route('/profile', methods=['GET', 'POST'])
+        return jsonify([dict(n) for n in notifications])
+
+@app.route('/profile', methods=['GET', 'POST'])
 def profile():
     if 'user' not in session:
         return redirect(url_for('login'))
